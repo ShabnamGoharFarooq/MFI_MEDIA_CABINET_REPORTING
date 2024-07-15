@@ -3,3 +3,5 @@ openpyxl==3.0.9
 waitress==2.1.0
 pytz==2024.1
 gunicorn
+Werkzeug==2.0.2
+

@@ -9,6 +9,12 @@ from openpyxl.styles import Font, Border, Side
 from openpyxl.chart import PieChart, Reference, series
 from datetime import datetime
 from openpyxl.chart.label import DataLabel, DataLabelList
+import csv
+import pandas as pd
+from io import BytesIO
+
+from contextlib import contextmanager
+
 
 
 
@@ -29,26 +35,52 @@ if not os.path.exists(RESULT_FOLDER):
 @app.route('/add_member', methods=['GET', 'POST'])
 def add_member():
     if request.method == 'POST':
-        try:
-            member_id = int(request.form.get('member_id'))
-            name = request.form.get('name')
-            co_leader = request.form.get('co_leader')
+        if 'upload' in request.form:
+            # Handle CSV file upload
+            file = request.files['file']
+            if not file:
+                flash('No file selected.', 'danger')
+                return redirect(url_for('add_member'))
 
-            with connect_db() as conn:  # Context manager for connection
-                cursor = conn.cursor()
-                cursor.execute("""
-                    INSERT INTO members (member_id, name, co_leader) 
-                    VALUES (?, ?, ?)
-                """, (member_id, name, co_leader))
-                conn.commit()  # Commit changes immediately after execution
+            try:
+                with connect_db() as conn:
+                    cursor = conn.cursor()
+                    reader = csv.DictReader(file.read().decode('utf-8').splitlines())
+                    for row in reader:
+                        member_id = int(row['member_id'])
+                        name = row['name']
+                        co_leader = row['co_leader']
+                        cursor.execute("""
+                            INSERT INTO members (member_id, name, co_leader) 
+                            VALUES (?, ?, ?)
+                        """, (member_id, name, co_leader))
+                    conn.commit()
+                flash('Bulk members added successfully!', 'success')
+            except Exception as e:
+                flash(f'Error processing CSV file: {str(e)}', 'danger')
+            return redirect(url_for('add_member'))
 
-            flash('Member added successfully!', 'success')
-        except ValueError:
-            flash('Member ID must be an integer.', 'danger')
-        except Exception as e:
-            flash(f'Error adding member: {str(e)}', 'danger')
+        else:
+            # Handle single member addition
+            try:
+                member_id = int(request.form.get('member_id'))
+                name = request.form.get('name')
+                co_leader = request.form.get('co_leader')
 
-        return redirect(url_for('add_member'))
+                with connect_db() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        INSERT INTO members (member_id, name, co_leader) 
+                        VALUES (?, ?, ?)
+                    """, (member_id, name, co_leader))
+                    conn.commit()
+                flash('Member added successfully!', 'success')
+            except ValueError:
+                flash('Member ID must be an integer.', 'danger')
+            except Exception as e:
+                flash(f'Error adding member: {str(e)}', 'danger')
+
+            return redirect(url_for('add_member'))
 
     return render_template('add_member.html')
 
@@ -90,6 +122,63 @@ def view_members():
         logging.error(f"Error fetching members: {e}")
         flash('An error occurred while fetching members.', 'danger')
         return redirect('/')
+
+
+@app.route('/members/delete', methods=['POST'])
+def delete_members():
+    try:
+        member_ids = request.form.getlist('member_ids')
+
+        if member_ids:
+            conn = connect_db()
+            cursor = conn.cursor()
+
+            # Generate the SQL for deleting selected members
+            placeholders = ', '.join('?' for _ in member_ids)
+            sql = f"DELETE FROM members WHERE member_id IN ({placeholders})"
+
+            cursor.execute(sql, member_ids)
+            conn.commit()
+            conn.close()
+
+            flash('Selected members were successfully deleted.', 'success')
+        else:
+            flash('No members were selected for deletion.', 'warning')
+
+    except Exception as e:
+        logging.error(f"Error deleting members: {e}")
+        flash('An error occurred while deleting members.', 'danger')
+
+    return redirect(url_for('view_members'))
+
+@app.route('/members/download', methods=['GET'])
+def download_members():
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM members")
+        members = cursor.fetchall()
+
+        # Create a pandas DataFrame from the data
+        df = pd.DataFrame(members, columns=['Member ID', 'Name', 'Co-Leader'])
+
+        # Save the DataFrame to an Excel file
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df.to_excel(writer, index=False, sheet_name='Members')
+        writer.close()
+        output.seek(0)
+
+        conn.close()
+
+        return send_file(output, attachment_filename='members.xlsx', as_attachment=True)
+
+    except Exception as e:
+        logging.error(f"Error downloading members: {e}")
+        flash('An error occurred while downloading members.', 'danger')
+        return redirect(url_for('view_members'))
+
 
 @app.route('/edit_member/<int:member_id>', methods=['GET', 'POST'])
 def edit_member(member_id):

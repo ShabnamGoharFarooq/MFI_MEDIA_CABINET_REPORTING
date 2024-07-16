@@ -11,7 +11,7 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Ensures the background image stays fixed while scrolling */
-            color: black; /* Sets text color to white */
+            color: black; /* Sets text color to black */
         }
         .content-container {
             background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
@@ -32,9 +32,21 @@
     </style>
 </head>
 <body>
-    <div class="container mt-5 content-container"> <!-- Added content-container class -->
+    <div class="container mt-5 content-container">
         <a href="/" class="btn btn-primary">Home</a><br>
         <h2 class="card-title text-center">Members</h2>
+
+        <!-- Search Form -->
+        <form action="{{ url_for('view_members') }}" method="GET" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search by name..." name="search">
+                <div class="input-group-append">
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Members Table -->
         <table class="table table-striped">
             <thead>
                 <tr>

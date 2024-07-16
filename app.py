@@ -67,20 +67,29 @@ def reset_results():
 
     return redirect(url_for('upload_form'))
 
-@app.route('/members')
+
+@app.route('/members', methods=['GET', 'POST'])
 def view_members():
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM members")
+
+        # Handle search query
+        search_query = request.args.get('search')
+        if search_query:
+            cursor.execute("SELECT * FROM members WHERE name LIKE ?", ('%' + search_query + '%',))
+        else:
+            cursor.execute("SELECT * FROM members")
+
         members = cursor.fetchall()
         conn.close()
+
         return render_template('members.html', members=members)
+
     except Exception as e:
         logging.error(f"Error fetching members: {e}")
         flash('An error occurred while fetching members.', 'danger')
         return redirect('/')
-
 
 @app.route('/edit_member/<int:member_id>', methods=['GET', 'POST'])
 def edit_member(member_id):

@@ -5,4 +5,5 @@ pytz==2024.1
 gunicorn
 Werkzeug==2.0.3
 pandas==2.2.2
+xlsxwriter
 

@@ -72,7 +72,28 @@
             <button type="submit" class="btn btn-primary btn-block">Add Member</button>
             <button type="button" class="btn btn-secondary btn-block" onclick="goBack()">Back</button>
         </form>
+
+        <h4 class="text-center mt-4">Upload CSV</h4>
+        <form method="post" action="/add_member" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">CSV File:</label>
+                <input type="file" class="form-control-file" id="file" name="file" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" name="upload" value="Upload">Upload CSV</button>
+        </form>
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>

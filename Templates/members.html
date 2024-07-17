@@ -76,7 +76,7 @@
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>Select</th>
+                            <th><input type="checkbox" id="select-all"></th>
                             <th>Member ID</th>
                             <th>Name</th>
                             <th>Co-Leader</th>
@@ -105,5 +105,13 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('select-all').addEventListener('click', function(event) {
+            var checkboxes = document.querySelectorAll('input[type="checkbox"][name="member_ids"]');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = event.target.checked;
+            });
+        });
+    </script>
 </body>
 </html>

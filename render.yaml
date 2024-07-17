@@ -11,3 +11,5 @@ services:
         value: 'uploads'
       - key: RESULT_FOLDER
         value: 'results'
+      - key: DATABASE_PATH
+        value: 'My_database'

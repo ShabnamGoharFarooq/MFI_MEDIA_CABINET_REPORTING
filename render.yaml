@@ -11,3 +11,5 @@ services:
         value: 'uploads'
       - key: RESULT_FOLDER
         value: 'results'
+      - key: SQLITE_DATABASE_URL
+        value: 'My_database'

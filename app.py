@@ -4,9 +4,12 @@ import os
 import logging
 from database import connect_db
 import waitress
+from werkzeug.utils import secure_filename
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, Border, Side
 from openpyxl.chart import PieChart, Reference, series
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 from datetime import datetime
 from openpyxl.chart.label import DataLabel, DataLabelList
 import csv
@@ -52,7 +55,7 @@ def add_member():
                         co_leader = row['co_leader']
                         cursor.execute("""
                             INSERT INTO members (member_id, name, co_leader) 
-                            VALUES (?, ?, ?)
+                            VALUES (%s, %s, %s)
                         """, (member_id, name, co_leader))
                     conn.commit()
                 flash('Bulk members added successfully!', 'success')
@@ -71,7 +74,7 @@ def add_member():
                     cursor = conn.cursor()
                     cursor.execute("""
                         INSERT INTO members (member_id, name, co_leader) 
-                        VALUES (?, ?, ?)
+                        VALUES (%s, %s, %s)
                     """, (member_id, name, co_leader))
                     conn.commit()
                 flash('Member added successfully!', 'success')
@@ -83,6 +86,7 @@ def add_member():
             return redirect(url_for('add_member'))
 
     return render_template('add_member.html')
+
 
 @app.route('/reset_results', methods=['POST'])
 def reset_results():
@@ -99,7 +103,6 @@ def reset_results():
 
     return redirect(url_for('upload_form'))
 
-
 @app.route('/members', methods=['GET', 'POST'])
 def view_members():
     try:
@@ -109,7 +112,7 @@ def view_members():
         # Handle search query
         search_query = request.args.get('search')
         if search_query:
-            cursor.execute("SELECT * FROM members WHERE name LIKE ?", ('%' + search_query + '%',))
+            cursor.execute("SELECT * FROM members WHERE name ILIKE %s", ('%' + search_query + '%',))
         else:
             cursor.execute("SELECT * FROM members")
 
@@ -134,7 +137,7 @@ def delete_members():
             cursor = conn.cursor()
 
             # Generate the SQL for deleting selected members
-            placeholders = ', '.join('?' for _ in member_ids)
+            placeholders = ', '.join(['%s'] * len(member_ids))
             sql = f"DELETE FROM members WHERE member_id IN ({placeholders})"
 
             cursor.execute(sql, member_ids)
@@ -183,7 +186,7 @@ def download_members():
 @app.route('/edit_member/<int:member_id>', methods=['GET', 'POST'])
 def edit_member(member_id):
     if request.method == 'POST':
-        # Update member details in the  database
+        # Update member details in the database
         new_name = request.form.get('name')
         new_co_leader = request.form.get('co_leader')
         try:
@@ -191,8 +194,8 @@ def edit_member(member_id):
             cursor = conn.cursor()
             cursor.execute("""  
                 UPDATE members
-                SET name=?, co_leader=?
-                WHERE member_id=?
+                SET name=%s, co_leader=%s
+                WHERE member_id=%s
             """, (new_name, new_co_leader, member_id))
             conn.commit()
             conn.close()
@@ -206,7 +209,7 @@ def edit_member(member_id):
         try:
             conn = connect_db()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM members WHERE member_id=?", (member_id,))
+            cursor.execute("SELECT * FROM members WHERE member_id=%s", (member_id,))
             member = cursor.fetchone()
             conn.close()
             return render_template('edit_member.html', member=member)
@@ -220,7 +223,7 @@ def delete_member(member_id):
     try:
         conn = connect_db()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM members WHERE member_id=?", (member_id,))
+        cursor.execute("DELETE FROM members WHERE member_id=%s", (member_id,))
         conn.commit()
         conn.close()
         flash('Member deleted successfully!', 'success')
@@ -228,6 +231,7 @@ def delete_member(member_id):
         logging.error(f"Error deleting member: {e}")
         flash('An error occurred while deleting the member.', 'danger')
     return redirect('/members')
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -256,6 +260,8 @@ def upload_file():
         logging.error(f"Error uploading files: {e}")
         flash('An error occurred while processing the files.')
         return redirect(request.url)
+
+
 def compare_reports(report_path, output_path):
     try:
         conn = connect_db()
@@ -303,7 +309,7 @@ def compare_reports(report_path, output_path):
         border = Border(
             left=Side(style='thin', color='000000'),
             right=Side(style='thin', color='000000'),
-            top=Side(style='thin', color='000000'),
+            top=    Side(style='thin', color='000000'),
             bottom=Side(style='thin', color='000000')
         )
         submitted_font = Font(color='006400')  # Dark green
@@ -332,8 +338,8 @@ def compare_reports(report_path, output_path):
         # Store results in the database
         for member_id, name, co_leader, status in results:
             cursor.execute("""
-                INSERT OR REPLACE INTO results (member_id, name, co_leader, result, submission_date)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO results (member_id, name, co_leader, result, submission_date)
+                VALUES (%s, %s, %s, %s, %s)
             """, (member_id, name, co_leader, status, datetime.now()))
         conn.commit()
 

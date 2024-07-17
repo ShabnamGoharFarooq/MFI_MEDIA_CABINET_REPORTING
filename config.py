@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 # Load environment variables from .env file (for local development)
 load_dotenv()
 
-# Get the database path from environment variable or default to local file
-DATABASE = os.getenv('SQLITE_DATABASE_URL', 'My_database')
+# Get the database path from environment variable
+DATABASE = os.getenv('POSTGRESQL_DATABASE_URL')
 
-def get_database_path():
-    print(f"Using database path: {DATABASE}")  # Log the database path for verification
+def get_database_url():
+    print(f"Using database URL: {DATABASE}")  # Log the database URL for verification
     return DATABASE

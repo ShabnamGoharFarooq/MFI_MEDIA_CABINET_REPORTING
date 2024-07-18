@@ -6,5 +6,4 @@ gunicorn
 Werkzeug==2.0.3
 pandas==2.2.2
 xlsxwriter
-psycopg2-binary==2.9.9
 

@@ -1,8 +1,8 @@
 import os
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 # Load environment variables from .env file (for local development)
-load_dotenv()
+#load_dotenv()
 
 # Adjust to use Render environment variable names
 DATABASE_HOST = os.getenv('DATABASE_HOST')
